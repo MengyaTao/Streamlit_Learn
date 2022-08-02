@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-import xlrd
 import collections
 from collections import OrderedDict
 from datetime import datetime
 import numpy as np
+import pandas as pd
 from advective_processes_nano import lsFactor
 
 #################################################################
@@ -19,10 +19,9 @@ from advective_processes_nano import lsFactor
 
 
 def load_bgConc(filename, sheetname, presence):
-    chem_workbook = xlrd.open_workbook(filename)
-    bgValues_worksheet = chem_workbook.sheet_by_name(sheetname)
-    bgValues_code = bgValues_worksheet.col_values(1, start_rowx=2, end_rowx=None)
-    bgValues_value = bgValues_worksheet.col_values(2, start_rowx=2, end_rowx=None)
+    df = pd.read_excel(filename, sheet_name=sheetname, skiprows=1)
+    bgValues_code = df["Code"].tolist()
+    bgValues_value = df["kg/m^3"].tolist()
     # convert to units of ug/m3
     ## always converts units so need to make sure that inputs are always kg
     bgValues_value2 = [x * 10 ** 9 for x in bgValues_value]
@@ -112,26 +111,19 @@ def load_bgConc(filename, sheetname, presence):
 
 
 def load_climate(filename, sheetname, start_row, end_row):
-    env_workbook = xlrd.open_workbook(filename)
-    climate_worksheet = env_workbook.sheet_by_name(sheetname)
+    df = pd.read_excel(filename, sheet_name=sheetname)
+    df = df.iloc[start_row:end_row]
 
     # Climate Parameter Loading
-    climate_month = climate_worksheet.col_values(0, start_rowx=start_row, end_rowx=end_row)
-    climate_day = climate_worksheet.col_values(1, start_rowx=start_row, end_rowx=end_row)
-    climate_year = climate_worksheet.col_values(2, start_rowx=start_row, end_rowx=end_row)
-    climate_precip = climate_worksheet.col_values(3, start_rowx=start_row, end_rowx=end_row)
-    climate_windspeed = climate_worksheet.col_values(4, start_rowx=start_row, end_rowx=end_row)
-    climate_flow1 = climate_worksheet.col_values(5, start_rowx=start_row, end_rowx=end_row) # river
-    climate_flow2 = climate_worksheet.col_values(6, start_rowx=start_row, end_rowx=end_row) # lake
-    climate_temp = climate_worksheet.col_values(7, start_rowx=start_row, end_rowx=end_row)
-    climate_evap = climate_worksheet.col_values(8, start_rowx=start_row, end_rowx=end_row)
-
-    names = climate_worksheet.row_values(0, start_colx=3, end_colx=None)
-    headers = []
-
-    headers.append('dates')
-    for val in names:
-        headers.append(val)
+    climate_month = df["Month"].tolist()
+    climate_day = df["Day"].tolist()
+    climate_year = df["Year"].tolist()
+    climate_precip = df["Precipitation (mm/day)"].tolist()
+    climate_windspeed = df["Windspeed (m/second)"].tolist()
+    climate_flow1 = df["River Flow (m^3/s)"].tolist()
+    climate_flow2 = df["Lake flow (m^3/s)"].tolist() # lake
+    climate_temp = df["Temperature ('C)"].tolist()
+    climate_evap = df["Evaporation (mm)"].tolist()
 
     # Create Datetime Objects
     new_datetime = []
@@ -158,13 +150,10 @@ def load_climate(filename, sheetname, start_row, end_row):
 
 
 def load_ENM(filename, sheetname, presence):
-    chem_workbook = xlrd.open_workbook(filename)
-    ENM_worksheet = chem_workbook.sheet_by_name(sheetname)
-
-    ENM_code = ENM_worksheet.col_values(1, start_rowx=2, end_rowx=None)
-    ENM_value = ENM_worksheet.col_values(2, start_rowx=2, end_rowx=None)
+    df = pd.read_excel(filename, sheet_name=sheetname, skiprows=1)
+    ENM_code = df["Code"].tolist()
+    ENM_value = df["Value"].tolist()
     ENM_loading = zip(ENM_code, ENM_value)
-
     # ENM = {}
     ENM = OrderedDict()
     for name, value in ENM_loading:
@@ -211,11 +200,9 @@ def load_ENM(filename, sheetname, presence):
 
 
 def load_env(filename, sheetname, presence, climate):
-    env_workbook = xlrd.open_workbook(filename)
-    env_worksheet = env_workbook.sheet_by_name(sheetname)
-
-    env_code = env_worksheet.col_values(1, start_rowx=1, end_rowx=None)
-    env_value = env_worksheet.col_values(2, start_rowx=1, end_rowx=None)
+    df = pd.read_excel(filename, sheet_name=sheetname)
+    env_code = df["Code"].tolist()
+    env_value = df["Value"].tolist()
     env_loading = zip(env_code, env_value)
 
     env = OrderedDict()
@@ -625,10 +612,9 @@ def load_env(filename, sheetname, presence, climate):
 
 
 def load_presence(filename, sheetname):
-    env_workbook = xlrd.open_workbook(filename)
-    presence_worksheet = env_workbook.sheet_by_name(sheetname)
-    presence_code = presence_worksheet.col_values(1, start_rowx=1, end_rowx=None)
-    presence_value = presence_worksheet.col_values(2, start_rowx=1, end_rowx=None)
+    df = pd.read_excel(filename, sheet_name=sheetname)
+    presence_code = df["Code"].tolist()
+    presence_value = df["Presence"].tolist()
     presence_loading = zip(presence_code, presence_value)
 
     # presence = {}
@@ -719,35 +705,33 @@ def load_presence(filename, sheetname):
 
 
 def load_release(filename, sheetname, start_row, end_row, presence):
-    chem_workbook = xlrd.open_workbook(filename)
-    release_ws = chem_workbook.sheet_by_name(sheetname)
-
-    release_scenario = release_ws.cell_value(rowx=0, colx=1)
-
-    start_row = start_row + 1
-    end_row = end_row + 1
-
-    release_month = release_ws.col_values(0, start_rowx=start_row, end_rowx=end_row)
-    release_day = release_ws.col_values(1, start_rowx=start_row, end_rowx=end_row)
-    release_year = release_ws.col_values(2, start_rowx=start_row, end_rowx=end_row)
-    release_air = release_ws.col_values(3, start_rowx=start_row, end_rowx=end_row)
-    release_rw = release_ws.col_values(4, start_rowx=start_row, end_rowx=end_row)
-    release_rSS = release_ws.col_values(5, start_rowx=start_row, end_rowx=end_row)
-    release_rwSed = release_ws.col_values(6, start_rowx=start_row, end_rowx=end_row)
-    release_fw = release_ws.col_values(7, start_rowx=start_row, end_rowx=end_row)
-    release_fSS = release_ws.col_values(8, start_rowx=start_row, end_rowx=end_row)
-    release_fwSed = release_ws.col_values(9, start_rowx=start_row, end_rowx=end_row)
-    release_sw = release_ws.col_values(10, start_rowx=start_row, end_rowx=end_row)
-    release_sSS = release_ws.col_values(11, start_rowx=start_row, end_rowx=end_row)
-    release_swSed = release_ws.col_values(12, start_rowx=start_row, end_rowx=end_row)
-    release_soil1 = release_ws.col_values(13, start_rowx=start_row, end_rowx=end_row)
-    release_dsoil1 = release_ws.col_values(14, start_rowx=start_row, end_rowx=end_row)
-    release_soil2 = release_ws.col_values(15, start_rowx=start_row, end_rowx=end_row)
-    release_dsoil2 = release_ws.col_values(16, start_rowx=start_row, end_rowx=end_row)
-    release_soil3 = release_ws.col_values(17, start_rowx=start_row, end_rowx=end_row)
-    release_dsoil3 = release_ws.col_values(18, start_rowx=start_row, end_rowx=end_row)
-    release_soil4 = release_ws.col_values(19, start_rowx=start_row, end_rowx=end_row)
-    release_dsoil4 = release_ws.col_values(20, start_rowx=start_row, end_rowx=end_row)
+    # load release data
+    # to take into account of the row of release scenario
+    df = pd.read_excel(filename, sheet_name=sheetname, skiprows=1)
+    df2 = pd.read_excel(filename, sheet_name=sheetname, index_col="Release Scenario")
+    release_scenario = df2.columns[0]
+    df = df.iloc[start_row:end_row]
+    release_month = df["Month"].tolist()
+    release_day = df["Day"].tolist()
+    release_year = df["Year"].tolist()
+    release_air = df["Air (kg/day)"].tolist()
+    release_rw = df["Riverwater (kg/day)"].tolist()
+    release_rSS = df["Riverwater Suspended Sediment (kg/day)"].tolist()
+    release_rwSed = df["Riverwater Sediment (kg/day)"].tolist()
+    release_fw = df["Freshwater (kg/day)"].tolist()
+    release_fSS = df["Freshwater Suspended Sediment (kg/day)"].tolist()
+    release_fwSed = df["Freshwater Sediment (kg/day)"].tolist()
+    release_sw = df["Seawater (kg/day)"].tolist()
+    release_sSS = df["Seawater Suspended Sediment (kg/day)"].tolist()
+    release_swSed = df["Seawater Sediment (kg/day)"].tolist()
+    release_soil1 = df["Undeveloped Surface Soil (kg/day)"].tolist()
+    release_dsoil1 = df["Undeveloped Deep Soil (kg/day)"].tolist()
+    release_soil2 = df["Urban Surface Soil (kg/day)"].tolist()
+    release_dsoil2 = df["Urban Deep Soil (kg/day)"].tolist()
+    release_soil3 = df["Agricultural Surface Soil (kg/day)"].tolist()
+    release_dsoil3 = df["Agricultural Deep Soil (kg/day)"].tolist()
+    release_soil4 = df["Agricultural Surface Soil Biosolid (kg/day)"].tolist()
+    release_dsoil4 = df["Agricultural Deep Soil Biosolid (kg/day)"].tolist()
 
     # Create Datetime Objects
     new_datetime = []
