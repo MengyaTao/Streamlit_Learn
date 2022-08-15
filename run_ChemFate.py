@@ -60,7 +60,7 @@ if region_file:
 st.markdown("Please enter the start date and end date for your model simulation time: ")
 st.markdown("(from your input region file, your date range is from " + "**" + start_date_from_file + "**" + " to "
             + "**"+ end_date_from_file + "**" + \
-            ", but you can change the start date and end date to any date in between.")
+            ", but you can change the start date and end date to any date in between.)")
     # year month day
 start_date = st.text_input('Start Date', start_date_from_file)
 end_date = st.text_input('End Date', end_date_from_file)
