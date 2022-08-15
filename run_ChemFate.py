@@ -1,4 +1,5 @@
 import streamlit as st
+from datetime import datetime
 import pandas as pd
 import os
 import base64
@@ -6,8 +7,28 @@ import shutil
 
 from model_setup import Model_SetUp
 
+def get_date(region_file):
+    df = pd.read_excel(region_file, sheet_name="Climate")
+    start_month = df.iat[0, 0]
+    start_day = df.iat[0, 1]
+    start_year = df.iat[0, 2]
+    end_month = df.iat[-1, 0]
+    end_day = df.iat[-1, 1]
+    end_year = df.iat[-1, 2]
+    start_date = str(int(start_year)) + ' ' + str(int(start_month)) + ' ' + str(int(start_day))
+    end_date = str(int(end_year)) + ' ' + str(int(end_month)) + ' ' + str(int(end_day))
+    return start_date, end_date
+
 st.title('Welcome to ChemFate!')
 
+# selection for chemical type
+step1_txt = "ChemFate predicts daily chemical environmental concentrations for four classes of chemicals. " \
+            "ChemFate comprises four different models:\n" \
+            "1) organoFate, for non-ionizable organic chemicals, \n" \
+            "2) ionOFate, for ionizable organic chemicals, \n" \
+            "3) metalFate, for metals, \n" \
+            "4) nanoFate, for nanomaterials. "
+st.write(step1_txt)
 chem_type = st.selectbox(
      'Please select a chemical type:',
      ('NonionizableOrganic', 'IonizableOrganic', 'Metal', 'Nanomaterial'))
@@ -31,9 +52,18 @@ output_file_path = os.path.join(CUR_PATH, 'Output', file_name)
 if not os.path.exists(output_file_path):
     os.makedirs(output_file_path)
 
-# year month day
-start_date = st.text_input('Start Date', '2005 1 1')
-end_date = st.text_input('Start Date', '2005 1 5')
+start_date_from_file = "2005 1 1"
+end_date_from_file = "2014 12 31"
+if region_file:
+    start_date_from_file, end_date_from_file = get_date(region_file)
+
+st.markdown("Please enter the start date and end date for your model simulation time: ")
+st.markdown("(from your input region file, your date range is from " + "**" + start_date_from_file + "**" + " to "
+            + "**"+ end_date_from_file + "**" + \
+            ", but you can change the start date and end date to any date in between.")
+    # year month day
+start_date = st.text_input('Start Date', start_date_from_file)
+end_date = st.text_input('End Date', end_date_from_file)
 
 def create_download_zip(zip_directory, zip_path, filename):
     """
@@ -59,4 +89,13 @@ if st.button(label="Click to Run ChemFate"):
                         zip_path=output_file_path,
                         filename=file_name + '.zip')
 
+credit_txt1 = "_nanoFate was developed by Dr. Kendra Garner and Dr. Arturo Keller_"
+credit_txt2 = "_organoFate, ionOFate, and metalFate were developed by Dr. Mengya Tao and Dr. Arturo Keller_"
+credit_txt3 = "_Questions: email arturokeller@ucsb.edu; Keller Lab, Bren School, UC Santa Barbara, USA_"
+st.write("\n")
+st.write("\n")
+st.write("\n")
+st.markdown(credit_txt1)
+st.write(credit_txt2)
+st.write(credit_txt3)
 
