@@ -7,6 +7,21 @@ import shutil
 
 from model_setup import Model_SetUp
 
+def create_download_zip(zip_directory, zip_path, filename):
+    """
+        zip_directory (str): path to directory  you want to zip
+        zip_path (str): where you want to save zip file
+        filename (str): download filename for user who download this
+    """
+    shutil.make_archive(zip_path, 'zip', zip_directory)
+    with open(zip_path + '.zip', 'rb') as f:
+        bytes = f.read()
+        b64 = base64.b64encode(bytes).decode()
+        href = f'<a href="data:file/zip;base64,{b64}" download=\'{filename}\'>\
+            **Download Results (.zip)** \
+        </a>'
+        st.markdown(href, unsafe_allow_html=True)
+
 def get_date(region_file):
     df = pd.read_excel(region_file, sheet_name="Climate")
     start_month = df.iat[0, 0]
@@ -20,7 +35,6 @@ def get_date(region_file):
     return start_date, end_date
 
 st.title('Welcome to ChemFate!')
-
 # selection for chemical type
 step1_txt = "ChemFate predicts daily chemical environmental concentrations for four classes of chemicals. " \
             "ChemFate comprises four different models:\n" \
@@ -58,28 +72,24 @@ if region_file:
     start_date_from_file, end_date_from_file = get_date(region_file)
 
 st.markdown("Please enter the start date and end date for your model simulation time: ")
-st.markdown("(from your input region file, your date range is from " + "**" + start_date_from_file + "**" + " to "
+st.markdown("Note: from your input region file, your date range is from " + "**" + start_date_from_file + "**" + " to "
             + "**"+ end_date_from_file + "**" + \
-            ", but you can change the start date and end date to any date in between.)")
+            ", but you can change the start date and end date to any date in between. "
+            "Please check the dates in the Release file to make sure their start and end dates are within the range. )")
     # year month day
 start_date = st.text_input('Start Date', start_date_from_file)
 end_date = st.text_input('End Date', end_date_from_file)
 
-def create_download_zip(zip_directory, zip_path, filename):
-    """
-        zip_directory (str): path to directory  you want to zip
-        zip_path (str): where you want to save zip file
-        filename (str): download filename for user who download this
-    """
-    shutil.make_archive(zip_path, 'zip', zip_directory)
-    with open(zip_path + '.zip', 'rb') as f:
-        bytes = f.read()
-        b64 = base64.b64encode(bytes).decode()
-        href = f'<a href="data:file/zip;base64,{b64}" download=\'{filename}\'>\
-            **Download Results (.zip)** \
-        </a>'
-        st.markdown(href, unsafe_allow_html=True)
+start_day_from_file = datetime.strptime(start_date_from_file, "%Y %m %d")
+end_day_from_file = datetime.strptime(end_date_from_file, "%Y %m %d")
+start_day_from_user = datetime.strptime(start_date, "%Y %m %d")
+end_day_from_user = datetime.strptime(end_date, "%Y %m %d")
 
+if (start_day_from_user < start_day_from_file):
+    st.markdown("**Error:** your Start Date is outside the range.")
+if (end_day_from_user > end_day_from_file):
+    st.markdown("**Error:** your End Date is outside the range.")
+    
 if st.button(label="Click to Run ChemFate"):
     st.write("ChemFate Model Started to Run ......")
     model = Model_SetUp(start_date, end_date, run_option, bgPercOption2,
